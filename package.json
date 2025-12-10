@@ -1,0 +1,17 @@
+{
+  "name": "fapiao-tool",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun run main.ts",
+    "build": "./build.sh",
+    "build:current": "bun build main.ts --compile --outfile dist/fapiao && cp template.docx 使用说明.txt dist/"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.66",
+    "docx-templates": "^4.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.2"
+  }
+}
