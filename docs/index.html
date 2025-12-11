@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发票工具 - 批量发票识别与出入库报告生成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .feature h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .feature p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .download-section {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-section h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .download-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .download-btn .platform {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .download-btn .arch {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .usage {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            margin-top: 30px;
+        }
+
+        .usage h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .usage ol {
+            padding-left: 20px;
+        }
+
+        .usage li {
+            margin-bottom: 12px;
+            color: #555;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .footer a {
+            color: white;
+        }
+
+        .version-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>📋 发票工具</h1>
+            <p class="subtitle">批量发票识别与出入库报告生成工具</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <h3>🤖 AI 智能识别</h3>
+                    <p>基于 Qwen 大模型，准确识别各类电子发票信息</p>
+                </div>
+                <div class="feature">
+                    <h3>📄 批量处理</h3>
+                    <p>支持批量处理多张 PDF 发票，一次生成完整报告</p>
+                </div>
+                <div class="feature">
+                    <h3>📝 自动生成</h3>
+                    <p>自动汇总发票数据，生成规范的出入库报告文档</p>
+                </div>
+                <div class="feature">
+                    <h3>💻 跨平台支持</h3>
+                    <p>支持 Windows、macOS、Linux 多平台运行</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="download-section">
+            <h2>⬇️ 下载最新版本</h2>
+            <div class="download-grid">
+                <a href="https://github.com/Riceneeder/fapiao/releases/latest/download/fapiao-win-x64.zip" class="download-btn">
+                    <span class="icon">🪟</span>
+                    <span class="platform">Windows</span>
+                    <span class="arch">x64</span>
+                </a>
+                <a href="https://github.com/Riceneeder/fapiao/releases/latest/download/fapiao-mac-arm64.zip" class="download-btn">
+                    <span class="icon">🍎</span>
+                    <span class="platform">macOS</span>
+                    <span class="arch">Apple Silicon</span>
+                </a>
+                <a href="https://github.com/Riceneeder/fapiao/releases/latest/download/fapiao-mac-x64.zip" class="download-btn">
+                    <span class="icon">🍎</span>
+                    <span class="platform">macOS</span>
+                    <span class="arch">Intel</span>
+                </a>
+                <a href="https://github.com/Riceneeder/fapiao/releases/latest/download/fapiao-linux-x64.zip" class="download-btn">
+                    <span class="icon">🐧</span>
+                    <span class="platform">Linux</span>
+                    <span class="arch">x64</span>
+                </a>
+            </div>
+            <div class="version-info">
+                查看所有版本请访问 <a href="https://github.com/Riceneeder/fapiao/releases" target="_blank">GitHub Releases</a>
+            </div>
+        </div>
+
+        <div class="usage">
+            <h2>📖 使用说明</h2>
+            <ol>
+                <li>下载对应平台的压缩包并解压（解压后会包含 <code>pdfs</code> 和 <code>reports</code> 文件夹）</li>
+                <li>将需要处理的发票 PDF 文件放入 <code>pdfs</code> 文件夹</li>
+                <li>运行程序（Windows: <code>fapiao.exe</code>，macOS/Linux: <code>./fapiao</code>）</li>
+                <li>首次运行需要在浏览器中登录 <a href="https://chat.qwen.ai" target="_blank">Qwen</a> 账号进行授权（如无账号请先注册）</li>
+                <li>按提示输入课题名称、入库日期和出库日期</li>
+                <li>等待程序处理完成，报告将保存在 <code>reports</code> 文件夹中</li>
+            </ol>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://github.com/Riceneeder/fapiao" target="_blank">GitHub 仓库</a> · 
+                基于 <a href="https://bun.sh" target="_blank">Bun</a> 构建
+            </p>
+        </div>
+    </div>
+</body>
+</html>
