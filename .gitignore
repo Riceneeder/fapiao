@@ -8,6 +8,8 @@ dist/
 # Temporary directories
 images/
 .qwen/
+pdfs/
+reports/
 
 # IDE
 .idea/

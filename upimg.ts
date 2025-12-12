@@ -1,103 +1,32 @@
 import fs from 'fs';
 import path from 'path';
 
-// 使用 tmpfile.link API
-const API_ENDPOINT = 'https://tmpfile.link/api/upload';
+// MIME 类型映射
+const MIME_TYPE_MAP: Record<string, string> = {
+	'.jpg': 'image/jpeg',
+	'.jpeg': 'image/jpeg',
+	'.png': 'image/png',
+	'.webp': 'image/webp',
+	'.bmp': 'image/bmp',
+	'.tiff': 'image/tiff',
+	'.gif': 'image/gif'
+};
+
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.gif']);
-const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 2000;
 
-export type OutputFormat = 'auto' | 'jpeg' | 'png' | 'webp' | 'gif' | 'webp_animated';
-
-export interface UploadOptions {
-	outputFormat?: OutputFormat;
-	password?: string;
-	cdnDomain?: string;
-	concurrency?: number;
-}
-
-export interface UploadApiResponse {
-	success: boolean;
-	url?: string;
-	message?: string;
-	data?: {
-		filename: string;
-		original_size: number;
-		compressed_size: number;
-		compression_ratio: number;
-	};
-}
-
-export interface UploadResult {
+export interface EncodeResult {
 	file: string;
-	url?: string;
-	message?: string;
+	dataUrl?: string;
 	error?: string;
 }
 
-// 通用重试工具函数
-const withRetry = async <T>(
-	fn: () => Promise<T>,
-	retries: number = MAX_RETRIES,
-	delay: number = RETRY_DELAY_MS
-): Promise<T> => {
-	let lastError: Error | null = null;
-	for (let attempt = 1; attempt <= retries; attempt++) {
-		try {
-			return await fn();
-		} catch (error: any) {
-			lastError = error;
-			if (attempt < retries) {
-				await new Promise(resolve => setTimeout(resolve, delay * attempt));
-			}
-		}
-	}
-	throw lastError || new Error('请求失败');
-};
-
-// Upload a single image file and return its CDN URL.
-export const uploadImage = async (filePath: string, options: UploadOptions = {}): Promise<UploadApiResponse> => {
-	return withRetry(async () => {
-		const buffer = await fs.promises.readFile(filePath);
-		const blob = new Blob([buffer]);
-		const formData = new FormData();
-
-		formData.append('file', blob, path.basename(filePath));
-
-		const response = await fetch(API_ENDPOINT, {
-			method: 'POST',
-			body: formData
-		});
-
-		if (!response.ok) {
-			const text = await response.text();
-			throw new Error(`Upload failed: ${response.status} - ${text}`);
-		}
-
-		const json = await response.json() as { 
-			fileName: string; 
-			downloadLink: string;
-			downloadLinkEncoded: string;
-			size: number;
-			type: string;
-		};
-
-		if (!json.downloadLink && !json.downloadLinkEncoded) {
-			throw new Error(`Upload failed: no download link returned`);
-		}
-
-		return {
-			success: true,
-			url: json.downloadLinkEncoded || json.downloadLink,
-			message: 'Upload successful',
-			data: {
-				filename: json.fileName,
-				original_size: json.size,
-				compressed_size: json.size,
-				compression_ratio: 1
-			}
-		};
-	});
+// 将图片文件编码为 base64 Data URL
+export const encodeImageToBase64 = async (filePath: string): Promise<string> => {
+	const buffer = await fs.promises.readFile(filePath);
+	const base64 = buffer.toString('base64');
+	const ext = path.extname(filePath).toLowerCase();
+	const mimeType = MIME_TYPE_MAP[ext] || 'image/jpeg';
+	return `data:${mimeType};base64,${base64}`;
 };
 
 // Recursively find image files within a directory.
@@ -133,30 +62,29 @@ const runWithConcurrency = async <T, R>(items: T[], limit: number, worker: (item
 	return results;
 };
 
-export interface BatchUploadResult {
-	success: UploadResult[];
-	failed: UploadResult[];
+export interface BatchEncodeResult {
+	success: EncodeResult[];
+	failed: EncodeResult[];
 }
 
-// Upload all images within a folder (recursively) and return their URLs grouped by success/failure.
-export const uploadImagesInFolder = async (folderPath: string, options: UploadOptions = {}): Promise<BatchUploadResult> => {
+// 将文件夹中的所有图片编码为 base64 Data URL
+export const encodeImagesInFolder = async (folderPath: string, concurrency: number = 5): Promise<BatchEncodeResult> => {
 	const files = await collectImageFiles(folderPath);
-	const concurrency = options.concurrency ?? 3;
 
 	const outcomes = await runWithConcurrency(files, concurrency, async (file) => {
 		try {
-			const res = await uploadImage(file, options);
-			return { file, url: res.url, message: res.message } satisfies UploadResult;
+			const dataUrl = await encodeImageToBase64(file);
+			return { file, dataUrl } satisfies EncodeResult;
 		} catch (error: any) {
-			return { file, error: error?.message || String(error) } satisfies UploadResult;
+			return { file, error: error?.message || String(error) } satisfies EncodeResult;
 		}
 	});
 
-	const success: UploadResult[] = [];
-	const failed: UploadResult[] = [];
+	const success: EncodeResult[] = [];
+	const failed: EncodeResult[] = [];
 
 	for (const outcome of outcomes) {
-		if (outcome.url) {
+		if (outcome.dataUrl) {
 			success.push(outcome);
 		} else {
 			failed.push(outcome);

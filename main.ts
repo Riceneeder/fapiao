@@ -3,7 +3,7 @@ import path from 'path';
 import { createInterface } from 'readline';
 import * as docxTemplates from 'docx-templates';
 import { convertPdfsInFolder } from './pdf2img';
-import { uploadImagesInFolder } from './upimg';
+import { encodeImagesInFolder } from './upimg';
 import { QwenCodeSDK } from './qwensdk';
 
 interface PartyInfo {
@@ -269,43 +269,43 @@ const ensureAuthenticated = async (sdk: QwenCodeSDK) => {
     }
 };
 
-const convertAndUploadImages = async () => {
+const convertAndEncodeImages = async () => {
     await ensureDir(IMAGE_OUTPUT_DIR);
     
     console.log('\n📄 正在转换 PDF 文件...');
     await convertPdfsInFolder(PDF_INPUT_DIR, IMAGE_OUTPUT_DIR);
 
-    console.log('\n🚀 正在上传图片...');
-    const uploadResult = await uploadImagesInFolder(IMAGE_OUTPUT_DIR);
+    console.log('\n🔒 正在编码图片为 base64...');
+    const encodeResult = await encodeImagesInFolder(IMAGE_OUTPUT_DIR);
     
-    // 返回文件名和 URL 的对应关系
-    const uploadedImages = uploadResult.success
-        .filter(item => item.url)
+    // 返回文件名和 base64 Data URL 的对应关系
+    const encodedImages = encodeResult.success
+        .filter(item => item.dataUrl)
         .map(item => ({
             file: path.basename(item.file),
-            url: item.url!
+            dataUrl: item.dataUrl!
         }));
     
-    const failedUploads = uploadResult.failed;
+    const failedEncodes = encodeResult.failed;
 
-    if (uploadedImages.length === 0) {
-        throw new Error('没有图片上传成功');
+    if (encodedImages.length === 0) {
+        throw new Error('没有图片编码成功');
     }
 
-    console.log(`   ✓ 上传成功: ${uploadedImages.length} 张`);
-    if (failedUploads.length > 0) {
-        console.log(`   ✗ 上传失败: ${failedUploads.length} 张`);
+    console.log(`   ✓ 编码成功: ${encodedImages.length} 张`);
+    if (failedEncodes.length > 0) {
+        console.log(`   ✗ 编码失败: ${failedEncodes.length} 张`);
     }
 
-    return { uploadedImages, failedUploads };
+    return { encodedImages, failedEncodes };
 };
 
 // 识别单张发票图片
-const extractSingleInvoice = async (sdk: QwenCodeSDK, imageUrl: string): Promise<InvoiceData> => {
+const extractSingleInvoice = async (sdk: QwenCodeSDK, dataUrl: string): Promise<InvoiceData> => {
     const userContent = [
         {
             type: 'image_url' as const,
-            image_url: { url: imageUrl, detail: 'high' as const }
+            image_url: { url: dataUrl, detail: 'high' as const }
         },
         { type: 'text' as const, text: '请提取发票信息并返回 JSON。' }
     ];
@@ -341,12 +341,12 @@ const extractSingleInvoice = async (sdk: QwenCodeSDK, imageUrl: string): Promise
 // 按 PDF 文件分组图片，然后逐个识别
 const extractAllInvoices = async (
     sdk: QwenCodeSDK, 
-    uploadedImages: { file: string; url: string }[]
+    encodedImages: { file: string; dataUrl: string }[]
 ): Promise<InvoiceData[]> => {
     // 按 PDF 文件名分组图片（同一个 PDF 可能有多页）
     const pdfGroups = new Map<string, string[]>();
     
-    for (const img of uploadedImages) {
+    for (const img of encodedImages) {
         // 文件名格式: pdfname-1.png, pdfname-2.png
         const match = img.file.match(/^(.+)-\d+\.[^.]+$/);
         const pdfName = match ? match[1] : img.file;
@@ -354,7 +354,7 @@ const extractAllInvoices = async (
         if (!pdfGroups.has(pdfName)) {
             pdfGroups.set(pdfName, []);
         }
-        pdfGroups.get(pdfName)!.push(img.url);
+        pdfGroups.get(pdfName)!.push(img.dataUrl);
     }
 
     const invoices: InvoiceData[] = [];
@@ -362,13 +362,13 @@ const extractAllInvoices = async (
     
     for (let i = 0; i < pdfNames.length; i++) {
         const pdfName = pdfNames[i];
-        const urls = pdfGroups.get(pdfName)!;
+        const dataUrls = pdfGroups.get(pdfName)!;
         
         process.stdout.write(`• 识别发票 ${i + 1}/${pdfNames.length}: ${pdfName}...`);
         
         try {
             // 如果同一个 PDF 有多页，只用第一页（通常发票只有一页）
-            const invoice = await extractSingleInvoice(sdk, urls[0]);
+            const invoice = await extractSingleInvoice(sdk, dataUrls[0]);
             invoices.push(invoice);
             console.log(` ✓ ${invoice.items.length} 项商品`);
         } catch (error: any) {
@@ -422,10 +422,10 @@ const main = async () => {
         await ensureDir(REPORT_OUTPUT_DIR);
         await ensureAuthenticated(sdk);
 
-        const { uploadedImages } = await convertAndUploadImages();
+        const { encodedImages } = await convertAndEncodeImages();
 
         console.log('\n🤖 正在识别发票信息...');
-        const invoices = await extractAllInvoices(sdk, uploadedImages);
+        const invoices = await extractAllInvoices(sdk, encodedImages);
         
         if (invoices.length === 0) {
             throw new Error('没有成功识别任何发票');
